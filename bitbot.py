@@ -171,6 +171,7 @@ def buy_market(pair_name, sum):
     price_map = price_highest_ask(pair_name)
     price = price_map['price']
     amount = sum / price
+    logger.info(f"price: {price} / amount: {amount} / sum : {sum}")
     return buy(pair_name, price, amount)
 
 def sell_market_amount(pair_name, amount):
@@ -230,6 +231,9 @@ def breakout():
 
         logger.info("가격 변동 추적을 시작합니다.")
         while True:
+            now = datetime.datetime.now()
+            logger.info(now)
+            
             if buy_eth == True and buy_btc == True and buy_xrp == True:
                 logger.info("더 이상 처리할게 없습니다.")
                 break
@@ -291,7 +295,9 @@ def breakout():
 
         if now.hour == 23 and now.minute == 59:
             logger.info("매도를 진행합니다.")
-            bitbot.sell_multiple_market(['ETH', 'BTC', 'XRP'])
+            sell_multiple_market(['ETH', 'BTC', 'XRP'])
+            logger.info("잠시 기다렸다 리셋합니다.")
+            time.sleep(180)
             break
         else:
             logger.info(f"23시 59분을 기다립니다. ")
