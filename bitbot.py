@@ -30,6 +30,8 @@ def calculate_yesterday():
     global yesterday_end_time
     yesterday_end_time = int(time.mktime(yesterday_end.timetuple()) * 1000.0)
 
+calculate_yesterday()
+
 def logResponse(response):
     logger.info("status_code: " + str(response.status_code))
     logger.info("\nheaders: " + str(response.headers))
@@ -168,7 +170,7 @@ def sell(pair_name, price, amount):
     return order(pair_name, 'sell', price, amount)
 
 def buy_market(pair_name, sum):
-    price_map = price_highest_ask(pair_name)
+    price_map = price_lowest_ask(pair_name)
     price = price_map['price']
     amount = sum / price
     logger.info(f"price: {price} / amount: {amount} / sum : {sum}")
@@ -220,8 +222,8 @@ def breakout():
     logger.info(f"목표 금액은 ETH: {target_eth_price} / BTC: {target_btc_price} / XRP: {target_xrp_price}")
 
     now = datetime.datetime.now()
-    if now.hour > 10:
-        logger.info("이미 오전 10시를 넘었기 때문에 매수하지 않습니다.")
+    if now.hour > 14:
+        logger.info(f"이미 {now.hour}이기 때문에 매수하지 않습니다.")
     else:
         target_volatility = 0.02
         sum_eth = target_volatility / eth['volatility'] * money
@@ -233,7 +235,11 @@ def breakout():
         while True:
             now = datetime.datetime.now()
             logger.info(now)
-            
+
+            if now.hour == 23 and now.minute == 50:
+                logger.info("가격 변동 추적을 그만두고 매도를 준비합니다.")
+                break
+
             if buy_eth == True and buy_btc == True and buy_xrp == True:
                 logger.info("더 이상 처리할게 없습니다.")
                 break
@@ -241,7 +247,9 @@ def breakout():
             if buy_eth == False:
                 try:
                     eth_price = price_lowest_ask('ETH-KRW')['price']
-                    logger.info(f"ETH 현재: {eth_price} 목표: {target_eth_price}")
+                    gap = target_eth_price - eth_price
+                    ratio = eth_price / target_eth_price
+                    logger.info(f"ETH 현재: {eth_price} 목표: {target_eth_price} 차이: {gap}/{ratio}")
                     if (eth_price >= target_eth_price):
                         logger.info("ETH 구매합니다.")
                         logger.info(buy_market('ETH-KRW', sum_eth))
@@ -254,7 +262,9 @@ def breakout():
             if buy_btc == False:
                 try:
                     btc_price = price_lowest_ask('BTC-KRW')['price']
-                    logger.info(f"BTC 현재: {btc_price} 목표: {target_btc_price}")
+                    gap = target_btc_price - btc_price
+                    ratio = btc_price / target_btc_price
+                    logger.info(f"BTC 현재: {btc_price} 목표: {target_btc_price} 차이: {gap}/{ratio}")
                     if (btc_price >= target_btc_price):
                         logger.info("BTC 구매합니다.")
                         logger.info(buy_market('BTC-KRW', sum_btc))
@@ -267,7 +277,9 @@ def breakout():
             if buy_xrp == False:
                 try:
                     xrp_price = price_lowest_ask('XRP-KRW')['price']
-                    logger.info(f"XRP 현재: {xrp_price} 목표: {target_xrp_price}")
+                    gap = target_xrp_price - xrp_price
+                    ratio = xrp_price / target_xrp_price
+                    logger.info(f"XRP 현재: {xrp_price} 목표: {target_xrp_price} 차이: {gap}/{ratio}")
                     if (xrp_price >= target_xrp_price):
                         logger.info("XRP 구매합니다.")
                         logger.info(buy_market('XRP-KRW', sum_xrp))
@@ -310,5 +322,3 @@ def run():
         logger.info("변동성 돌파 전략을 시작합니다.")
         breakout()
         time.sleep(120)
-
-calculate_yesterday()
