@@ -68,7 +68,7 @@ def candles(pair_name, start = yesterday_begin_time, end = yesterday_end_time, i
     result['high'] = max
     result['range'] = max - min
     result['signal_range'] = abs(result['close'] - result['open'])
-    result['noise'] = result['signal_range'] / result['range']
+    result['noise'] = 1 - (result['signal_range'] / result['range'])
     result['breakout'] = (result['range'] * result['noise']) + result['close']
     result['volatility'] = result['range'] / result['close']
     return result
