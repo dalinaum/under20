@@ -45,7 +45,13 @@ def assets():
         return
     return json.loads(response.text)
 
-def candles(pair_name, start = yesterday_begin_time, end = yesterday_end_time, interval = 30):
+def begin_time():
+    return yesterday_begin_time
+
+def end_time():
+    return yesterday_end_time
+
+def candles(pair_name, start = begin_time(), end = end_time(), interval = 30):
     url = f"{API_HOST}/trading-pairs/{pair_name}/candles?start={start}&end={end}&interval={interval}"
     response = requests.get(url)
     if response.status_code != 200:
