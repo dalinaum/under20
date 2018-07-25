@@ -98,7 +98,7 @@ def price_lowest_ask(pair_name):
     return { 'id' : id, 'price' : price, 'volume' : volume }
 
 def price_highest_ask(pair_name):
-    (id, price, volume) = prices_ask(pair_name)[-1]
+    (id, price, volume) = prices_ask(pair_name)[3]
     return { 'id' : id, 'price' : price, 'volume' : volume }
 
 def price_highest_bid(pair_name):
@@ -106,7 +106,7 @@ def price_highest_bid(pair_name):
     return { 'id' : id, 'price' : price, 'volume' : volume }
 
 def price_lowest_bid(pair_name):
-    (id, price, volume) = prices_bid(pair_name)[-1]
+    (id, price, volume) = prices_bid(pair_name)[3]
     return { 'id' : id, 'price' : price, 'volume' : volume }
 
 def generate_signature(nonce, method, request_path, body = ''):
@@ -185,6 +185,7 @@ def buy_market(pair_name, sum):
 def sell_market_amount(pair_name, amount):
     price_map = price_lowest_bid(pair_name)
     price = price_map['price']
+    logger.info(f"{pair_name} 매도 / 가격 {price} / 양 {amount}")
     return sell(pair_name, price, amount)
 
 def sell_market(name):
@@ -228,74 +229,83 @@ def breakout():
     logger.info(f"목표 금액은 ETH: {target_eth_price} / BTC: {target_btc_price} / XRP: {target_xrp_price}")
 
     now = datetime.datetime.now()
-    if now.hour > 14:
-        logger.info(f"이미 {now.hour}이기 때문에 매수하지 않습니다.")
-    else:
-        target_volatility = 0.02
-        sum_eth = target_volatility / eth['volatility'] * money
-        sum_btc = target_volatility / btc['volatility'] * money
-        sum_xrp = target_volatility / xrp['volatility'] * money
-        logger.info(f"이번 투자 금액은 ETH: {sum_eth} / BTC: {sum_btc} / XRP: {sum_xrp}")
+    target_volatility = 0.02
+    sum_eth = target_volatility / eth['volatility'] * money
+    sum_btc = target_volatility / btc['volatility'] * money
+    sum_xrp = target_volatility / xrp['volatility'] * money
+    logger.info(f"이번 투자 금액은 ETH: {sum_eth} / BTC: {sum_btc} / XRP: {sum_xrp}")
 
-        logger.info("가격 변동 추적을 시작합니다.")
-        while True:
-            now = datetime.datetime.now()
-            logger.info(now)
+    logger.info("가격 변동 추적을 시작합니다.")
+    while True:
+        now = datetime.datetime.now()
+        logger.info(now)
 
-            if now.hour == 23 and now.minute == 50:
-                logger.info("가격 변동 추적을 그만두고 매도를 준비합니다.")
-                break
+        if now.hour == 23 and now.minute == 57:
+            logger.info("가격 변동 추적을 그만두고 매도를 준비합니다.")
+            break
 
-            if buy_eth == True and buy_btc == True and buy_xrp == True:
-                logger.info("더 이상 처리할게 없습니다.")
-                break
+        if buy_eth == True and buy_btc == True and buy_xrp == True:
+            logger.info("더 이상 처리할게 없습니다.")
+            break
 
-            if buy_eth == False:
-                try:
-                    eth_price = price_lowest_ask('ETH-KRW')['price']
-                    gap = target_eth_price - eth_price
-                    ratio = eth_price / target_eth_price
-                    logger.info(f"ETH 현재: {eth_price} 목표: {target_eth_price} 차이: {gap}/{ratio}")
-                    if (eth_price >= target_eth_price):
+        if buy_eth == False:
+            try:
+                eth_price = price_lowest_ask('ETH-KRW')['price']
+                gap = target_eth_price - eth_price
+                ratio = eth_price / target_eth_price
+                logger.info(f"ETH 현재: {eth_price} 목표: {target_eth_price} 차이: {gap}/{ratio}")
+                if (eth_price >= target_eth_price):
+                    if (eth_price / target_eth_price >= 1.02):
+                        logger.info("가격이 너무 비싸 구매하지 않습니다.")
+                        buy_eth = True
+                    else:
                         logger.info("ETH 구매합니다.")
                         logger.info(buy_market('ETH-KRW', sum_eth))
                         buy_eth = True
-                except Exception as ex:
-                    logger.error('ETH 에러가 발생했습니다.')
-                    logger.exception(ex)
-                    time.sleep(30)
+            except Exception as ex:
+                logger.error('ETH 에러가 발생했습니다.')
+                logger.exception(ex)
+                time.sleep(30)
 
-            if buy_btc == False:
-                try:
-                    btc_price = price_lowest_ask('BTC-KRW')['price']
-                    gap = target_btc_price - btc_price
-                    ratio = btc_price / target_btc_price
-                    logger.info(f"BTC 현재: {btc_price} 목표: {target_btc_price} 차이: {gap}/{ratio}")
-                    if (btc_price >= target_btc_price):
+        if buy_btc == False:
+            try:
+                btc_price = price_lowest_ask('BTC-KRW')['price']
+                gap = target_btc_price - btc_price
+                ratio = btc_price / target_btc_price
+                logger.info(f"BTC 현재: {btc_price} 목표: {target_btc_price} 차이: {gap}/{ratio}")
+                if (btc_price >= target_btc_price):
+                    if (btc_price / target_btc_price >= 1.02):
+                        logger.info("가격이 너무 비싸 구매하지 않습니다.")
+                        buy_btc = True
+                    else:
                         logger.info("BTC 구매합니다.")
                         logger.info(buy_market('BTC-KRW', sum_btc))
                         buy_btc = True
-                except Exception as ex:
-                    logger.error('BTC 에러가 발생했습니다.')
-                    logger.exception(ex)
-                    time.sleep(30)
+            except Exception as ex:
+                logger.error('BTC 에러가 발생했습니다.')
+                logger.exception(ex)
+                time.sleep(30)
 
-            if buy_xrp == False:
-                try:
-                    xrp_price = price_lowest_ask('XRP-KRW')['price']
-                    gap = target_xrp_price - xrp_price
-                    ratio = xrp_price / target_xrp_price
-                    logger.info(f"XRP 현재: {xrp_price} 목표: {target_xrp_price} 차이: {gap}/{ratio}")
-                    if (xrp_price >= target_xrp_price):
+        if buy_xrp == False:
+            try:
+                xrp_price = price_lowest_ask('XRP-KRW')['price']
+                gap = target_xrp_price - xrp_price
+                ratio = xrp_price / target_xrp_price
+                logger.info(f"XRP 현재: {xrp_price} 목표: {target_xrp_price} 차이: {gap}/{ratio}")
+                if (xrp_price >= target_xrp_price):
+                    if (xrp_price / target_xrp_price >= 1.02):
+                        logger.info("가격이 너무 비싸 구매하지 않습니다.")
+                        buy_xrp = True
+                    else:
                         logger.info("XRP 구매합니다.")
                         logger.info(buy_market('XRP-KRW', sum_xrp))
                         buy_xrp = True
-                except Exception as ex:
-                    logger.error('XRP 에러가 발생했습니다.')
-                    logger.exception(ex)
-                    time.sleep(30)
+            except Exception as ex:
+                logger.error('XRP 에러가 발생했습니다.')
+                logger.exception(ex)
+                time.sleep(30)
 
-            time.sleep(3)
+        time.sleep(3)
 
     logger.info("매도를 준비합니다.")
 
@@ -315,7 +325,7 @@ def breakout():
             logger.info("매도를 진행합니다.")
             sell_multiple_market(['ETH', 'BTC', 'XRP'])
             logger.info("잠시 기다렸다 리셋합니다.")
-            time.sleep(180)
+            time.sleep(61)
             break
         else:
             logger.info(f"23시 59분을 기다립니다. ")
@@ -327,4 +337,7 @@ def run():
     while True:
         logger.info("변동성 돌파 전략을 시작합니다.")
         breakout()
-        time.sleep(120)
+        time.sleep(30)
+
+if __name__ == "__main__":
+    run()
