@@ -239,12 +239,25 @@ def breakout():
     target_btc_price = btc['breakout']
     target_xrp_price = xrp['breakout']
     logger.info(f"목표 금액은 ETH: {target_eth_price} / BTC: {target_btc_price} / XRP: {target_xrp_price}")
+    logger.info(f"현재 변동성은 ETH: {eth['volatility']} / BTC: {btc['volatility']} / XRP: {xrp['volatility']}")
 
     now = datetime.datetime.now()
     target_volatility = 0.02
-    sum_eth = target_volatility / eth['volatility'] * money
-    sum_btc = target_volatility / btc['volatility'] * money
-    sum_xrp = target_volatility / xrp['volatility'] * money
+    if eth['volatility'] > target_volatility:
+        eth_ratio = target_volatility / eth['volatility']
+    else:
+        eth_ratio = 1
+    if btc['volatility'] > target_volatility:
+        btc_ratio = target_volatility / btc['volatility']
+    else:
+        btc_ratio = 1
+    if xrp['volatility'] > target_volatility:
+        xrp_ratio = target_volatility / xrp['volatility']
+    else:
+        xrp_ratio = 1
+    sum_eth = eth_ratio * money
+    sum_btc = btc_ratio * money
+    sum_xrp = xrp_ratio * money
     logger.info(f"이번 투자 금액은 ETH: {sum_eth} / BTC: {sum_btc} / XRP: {sum_xrp}")
 
     logger.info("가격 변동 추적을 시작합니다.")
