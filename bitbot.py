@@ -1,18 +1,27 @@
+#!/usr/bin/env python
+
 import time, datetime
 import requests, json
 import sys
 import base64, hmac, hashlib
 import logging
 
-if not ('logger' in globals()):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    handler = logging.FileHandler('bitbot.log')
+def setup_file_log_hanlder():
+    now = datetime.datetime.now()
+    global handler
+    if 'handler' in globals():
+        logger.removeHandler(handler)
+    handler = logging.FileHandler(f"log-bitbot_{now.year}-{now.month}-{now.day}.log")
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+if not 'logger' in globals():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler())
+    setup_file_log_hanlder()
 
 API_HOST = "https://api.gopax.co.kr"
 API_KEY = "XXX"
@@ -51,7 +60,7 @@ def begin_time():
 def end_time():
     return yesterday_end_time
 
-def candles(pair_name, start = begin_time(), end = end_time(), interval = 30):
+def candles(pair_name, start, end, interval = 30):
     url = f"{API_HOST}/trading-pairs/{pair_name}/candles?start={start}&end={end}&interval={interval}"
     response = requests.get(url)
     if response.status_code != 200:
@@ -74,7 +83,8 @@ def candles(pair_name, start = begin_time(), end = end_time(), interval = 30):
     result['high'] = max
     result['range'] = max - min
     result['signal_range'] = abs(result['close'] - result['open'])
-    result['noise'] = 1 - (result['signal_range'] / result['range'])
+    #result['noise'] = 1 - (result['signal_range'] / result['range'])
+    result['noise'] = 0.5
     result['breakout'] = (result['range'] * result['noise']) + result['close']
     result['volatility'] = result['range'] / result['close']
     return result
@@ -207,6 +217,8 @@ def explain_candles(name, candles):
 def breakout():
     logger.info("어제의 시작과 끝 시간을 체크합니다.")
     calculate_yesterday()
+    print(begin_time())
+    print(end_time())
 
     total_money = balance('KRW')['avail']
     money = total_money / 3
@@ -216,9 +228,9 @@ def breakout():
     buy_btc = False
     buy_xrp = False
 
-    eth = candles('ETH-KRW')
-    btc = candles('BTC-KRW')
-    xrp = candles('XRP-KRW')
+    eth = candles('ETH-KRW', begin_time(), end_time())
+    btc = candles('BTC-KRW', begin_time(), end_time())
+    xrp = candles('XRP-KRW', begin_time(), end_time())
     explain_candles('ETH', eth)
     explain_candles('BTC', btc)
     explain_candles('XRP', xrp)
@@ -313,19 +325,21 @@ def breakout():
         now = datetime.datetime.now()
 
         eth_price = price_lowest_ask('ETH-KRW')['price']
-        logger.info(f"ETH 현재: {eth_price}")
+        logger.info(f"ETH 현재: {eth_price} / {target_eth_price}")
 
         btc_price = price_lowest_ask('BTC-KRW')['price']
-        logger.info(f"BTC 현재: {btc_price}")
+        logger.info(f"BTC 현재: {btc_price} / {target_btc_price}")
 
         xrp_price = price_lowest_ask('XRP-KRW')['price']
-        logger.info(f"XRP 현재: {xrp_price}")
+        logger.info(f"XRP 현재: {xrp_price} / {target_xrp_price}")
 
         if now.hour == 23 and now.minute == 59:
             logger.info("매도를 진행합니다.")
             sell_multiple_market(['ETH', 'BTC', 'XRP'])
             logger.info("잠시 기다렸다 리셋합니다.")
+
             time.sleep(61)
+            setup_file_log_hanlder()
             break
         else:
             logger.info(f"23시 59분을 기다립니다. ")
